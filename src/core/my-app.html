@@ -1,0 +1,144 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
+<!--<link rel="lazy-import" href="bubble-view1.html">
+<link rel="lazy-import" href="bubble-view2.html">
+<link rel="lazy-import" href="bubble-view3.html">
+<link rel="lazy-import" href="bubble-view404.html">-->
+
+<dom-module id="bubble-app">
+  <template>
+    <style>
+      .auth-button {
+        color: inherit;
+        text-decoration: none;
+        position: relative;
+        padding: 10px;
+      }
+    </style>
+
+    <firebase-app
+      auth-domain="[[__config.authDomain]]"
+      database-url="[[__config.databaseURL]]"
+      api-key="[[__config.apiKey]]"
+      storage-bucket="[[__config.storageBucket]]"
+      messaging-sender-id="[[__config.messagingSenderId]]"></firebase-app>
+
+    <firebase-auth
+        id="auth"
+        user="{{user}}"
+        provider="google"
+        online="{{online}}"
+        status-known="{{authStatus}}"></firebase-auth>
+
+    <app-header shadow condenses reveals >
+      <app-toolbar>
+        <div main-title>
+          GDG Philippines Bubbles Program
+        </div>
+        <template is="dom-if" if="[[online]]">
+          <template is="dom-if" if="[[authStatus]]">
+            <template is="dom-if" if="[[!user]]">
+              <a class="auth-button" href="#" on-tap="login" on-click="login">
+                Login
+                <paper-ripple></paper-ripple>
+              </a>
+            </template>
+            <template is="dom-if" if="[[user]]">
+              Hi [[user.displayName]]!
+              <a class="auth-button" href="#" on-tap="logout" on-click="logout">
+                Logout
+                <paper-ripple></paper-ripple>
+              </a>
+            </template>
+          </template>
+          <template is="dom-if" if="[[!authStatus]]">
+            Loading...
+          </template>
+        </template>
+        <template is="dom-if" if="[[!online]]">
+          Offline...
+        </template>
+
+      </app-toolbar>
+    </app-header>
+
+  </template>
+
+  <script>
+    (()=>{
+      var config = {
+        apiKey: "AIzaSyBWrTmvpFsKGX3OjiVvTlmeC99cYRQ9vg4",
+        authDomain: "gdgphbubbles.firebaseapp.com",
+        databaseURL: "https://gdgphbubbles.firebaseio.com",
+        projectId: "gdgphbubbles",
+        storageBucket: "gdgphbubbles.appspot.com",
+        messagingSenderId: "522135348069"
+      };
+
+      class BubbleApp extends window.Polymer.Element {
+
+        static get is() { return 'bubble-app'; }
+
+        static get properties() {
+          return {
+            online: {
+              type: Boolean,
+              value: false
+            },
+            authStatus: {
+              type: Boolean,
+              value: false
+            },
+            user: {
+              type: Object,
+              value: null
+            },
+            __config: {
+              type: Object,
+              value: () => (config)
+            }
+          };
+        }
+
+        login() {
+          this.$.auth.signInWithPopup().then((result) => {
+            if (result.user) {
+              this.user = result.user
+            } else {
+              throw new Error('No user found')
+            }
+          }).catch((err) => {
+            console.error(err)
+          })
+        }
+
+        logout() {
+          this.$.auth.signOut().then(() => {
+            this.user = null
+          }).catch((err) => {
+            console.error(err)
+          })
+        }
+
+      }
+
+      window.customElements.define(BubbleApp.is, BubbleApp);
+    })()
+
+  </script>
+</dom-module>
