@@ -15,6 +15,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../../bower_components/app-layout/app-header/app-header.html">
 <link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
 <!--<link rel="lazy-import" href="bubble-view1.html">
 <link rel="lazy-import" href="bubble-view2.html">
 <link rel="lazy-import" href="bubble-view3.html">
@@ -28,6 +29,32 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         text-decoration: none;
         position: relative;
         padding: 10px;
+      }
+
+      .message-box {
+        padding: 20px;
+        padding-top: 100px;
+        font-size: 2em;
+        text-align: center;
+      }
+
+      .auth-status-spinner-main {
+        width: 100px;
+        height: 100px;
+      }
+
+      .shorter-title {
+        display: none;
+      }
+
+      @media screen and (max-width: 480px) {
+        .shorter-title {
+          display: inline;
+        }
+
+        .longer-title, .user-name {
+          display: none;
+        }
       }
     </style>
 
@@ -48,7 +75,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <app-header shadow condenses reveals >
       <app-toolbar>
         <div main-title>
-          GDG Philippines Bubbles Program
+          <span class="longer-title">
+            GDG Philippines Bubbles Program
+          </span>
+          <span class="shorter-title">
+            GDGPh Bubbles
+          </span>
         </div>
         <template is="dom-if" if="[[online]]">
           <template is="dom-if" if="[[authStatus]]">
@@ -59,16 +91,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               </a>
             </template>
             <template is="dom-if" if="[[user]]">
-              Hi [[user.displayName]]!
+              <span class="user-name">
+                Hi [[user.displayName]]!
+              </span>
               <a class="auth-button" href="#" on-tap="logout" on-click="logout">
                 Logout
                 <paper-ripple></paper-ripple>
               </a>
             </template>
           </template>
-          <template is="dom-if" if="[[!authStatus]]">
-            Loading...
-          </template>
+
         </template>
         <template is="dom-if" if="[[!online]]">
           Offline...
@@ -77,6 +109,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       </app-toolbar>
     </app-header>
 
+    <!-- main content -->
+
+    <template is="dom-if" if="[[online]]">
+      <template is="dom-if" if="[[authStatus]]">
+
+      </template>
+
+      <template is="dom-if" if="[[!authStatus]]">
+        <div class="message-box">
+          <paper-spinner-lite class="auth-status-spinner-main" active>Loading...</paper-spinner>
+        </div>
+      </template>
+    </template>
+    <template is="dom-if" if="[[!online]]">
+      <div class="message-box">
+        To play this game. You should be online
+      </div>
+    </template>
   </template>
 
   <script>
