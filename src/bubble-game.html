@@ -10,31 +10,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 
-<dom-module id="my-view404">
+<dom-module id="bubble-game">
   <template>
-    <style>
+    <style include="shared-styles">
       :host {
         display: block;
-
-        padding: 10px 20px;
+        padding: 10px;
       }
     </style>
 
-    Oops you hit a 404. <a href="[[rootPath]]">Head back to home.</a>
+    Hello
   </template>
 
   <script>
-    class MyView404 extends Polymer.Element {
-      static get is() { return 'my-view404'; }
-      static get properties() {
-        return {
-          // This shouldn't be neccessary, but the Analyzer isn't picking up
-          // Polymer.Element#rootPath
-          rootPath: String,
-        };
-      }
+    class MyView2 extends Polymer.Element {
+      static get is() { return 'bubble-game'; }
     }
 
-    window.customElements.define(MyView404.is, MyView404);
+    window.customElements.define(MyView2.is, MyView2);
   </script>
 </dom-module>
