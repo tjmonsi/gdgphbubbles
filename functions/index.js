@@ -132,10 +132,19 @@ app.post('/getbubbles', (request, response) => {
             })
             questions.push(question)
           }
+
+          var questionsSorted = questions.sort(() => {
+            return chance.integer({min: -20, max: 20})
+          })
+
+          var newQuestions = []
+
+          for (var m = 0; m < 40; m++) {
+            newQuestions.push(questionsSorted[m])
+          }
+
           response.status(200).json({
-            questions: questions.sort(() => {
-              return chance.integer({min: -20, max: 20})
-            })
+            questions: newQuestions
           })
         })
       } else {
