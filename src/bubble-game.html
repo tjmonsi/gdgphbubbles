@@ -9,24 +9,48 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="bubble-game-node.html">
 
 <dom-module id="bubble-game">
   <template>
-    <style include="shared-styles">
+    <style>
       :host {
         display: block;
         padding: 10px;
       }
     </style>
 
-    Hello
+    <firebase-query
+      path="gameModel/game"
+      data="{{gameArray}}"
+      order-by-child="startTime"
+      limit-to-last="1">
+    </firebase-query>
+
+    <template is="dom-repeat" items="[[gameArray]]">
+      <bubble-game-node game-key="[[item.$key]]" user="[[user]]"></bubble-game-node>
+    </template>
   </template>
 
   <script>
-    class MyView2 extends Polymer.Element {
+    class BubbleGame extends Polymer.Element {
       static get is() { return 'bubble-game'; }
+      static get properties() {
+        return {
+          gameArray: {
+            type: Array,
+            value: () => ([])
+          },
+          user: {
+            type: Object,
+            value: null
+          }
+        }
+      }
     }
 
-    window.customElements.define(MyView2.is, MyView2);
+    window.customElements.define(BubbleGame.is, BubbleGame);
   </script>
 </dom-module>

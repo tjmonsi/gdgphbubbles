@@ -14,7 +14,8 @@
     "polymerfire": "firebase/polymerfire#2.1",
     "app-layout": "PolymerElements/app-layout#^2.0.0",
     "paper-ripple": "PolymerElements/paper-ripple#^2.0.0",
-    "paper-spinner": "PolymerElements/paper-spinner#^2.0.0"
+    "paper-spinner": "PolymerElements/paper-spinner#^2.0.0",
+    "iron-ajax": "PolymerElements/iron-ajax#^2.0.2"
   },
   "resolutions": {
     "polymer": "^2.0.0"

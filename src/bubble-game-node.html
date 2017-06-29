@@ -1,0 +1,124 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="/bower_components/polymer/lib/utils/debounce.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-document.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="bubble-game-node">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 10px;
+      }
+    </style>
+
+    <template is="dom-if" if="[[gameKey]]">
+      <firebase-document
+          path="gameModel/game/[[gameKey]]"
+          data="{{game}}">
+      </firebase-query>
+
+      <iron-ajax
+          id="ajax"
+          url="https://us-central1-gdgphbubbles.cloudfunctions.net/auth/newplayer"
+          method="POST"
+          content-type="application/json"
+          handle-as="json"
+          on-response="handleNewPlayer">
+      </iron-ajax>
+
+      <template is="dom-if" if="[[checkStatusActive(game.status)]]">
+        [[game.status]]
+        [[team]]
+      </template>
+    </template>
+
+  </template>
+
+  <script>
+    class BubbleGame extends Polymer.Element {
+      static get is() { return 'bubble-game-node'; }
+      static get properties() {
+        return {
+          gameKey: {
+            type: String
+          },
+          game: {
+            type: Object,
+            value: null
+          },
+          user: {
+            type: Object,
+            value: null
+          },
+          team: {
+            type: String,
+            value: null
+          }
+        }
+      }
+      static get observers() {
+        return [
+          'checkTeam(game.status, gameKey)'
+        ]
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback()
+        if (this.teamRef) {
+          this.teamRef.off()
+        }
+      }
+
+      checkStatusActive(status) {
+        return status === 'active'
+      }
+
+      checkTeam(status, key) {
+        if (key && status && status === 'active') {
+          this.teamRef = firebase.database().ref(`gameModel/gamePlayers/${key}/players/${this.user.uid}/team`).on('value', this.setTeam.bind(this))
+        }
+      }
+
+      setTeam(data) {
+        if (data.exists()) {
+          this.team = data.val()
+        } else {
+          console.log('no team')
+          var ajax = this.shadowRoot.querySelector('#ajax');
+          this.user.getIdToken().then((token) => {
+            ajax.headers = {
+              Authorization: 'Bearer ' + token
+            };
+            ajax.body = JSON.stringify({
+              gameId: this.gameKey
+            })
+            this._debouncer = Polymer.Debouncer.debounce(this._debouncer, Polymer.Async.timeOut.after(250), () => { this.generateRequest() });
+          })
+        }
+      }
+
+      generateRequest() {
+        this.shadowRoot.querySelector('#ajax').generateRequest()
+      }
+
+      handleNewPlayer(e) {
+        var response = e.detail.response
+        console.log(response)
+      }
+    }
+
+    window.customElements.define(BubbleGame.is, BubbleGame);
+  </script>
+</dom-module>
