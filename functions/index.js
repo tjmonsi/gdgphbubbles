@@ -53,10 +53,9 @@ const validateFirebaseIdToken = (req, res, next) => {
 app.use(cors);
 app.use(cookieParser);
 app.use(validateFirebaseIdToken);
+
 app.post('/newplayer', (request, response) => {
   var uid = request.user.uid;
-  console.log(config)
-  // console.log(functions.config().firebase)
   var gameId = request.body.gameId
 
   if (gameId) {
@@ -75,7 +74,6 @@ app.post('/newplayer', (request, response) => {
         }
 
         var team = minArray.length > 1 ? minArray[chance.integer({min: 0, max: minArray.length - 1})] : minArray[0]
-        console.log(team)
 
         var updates = {}
         updates[`gameModel/gamePlayers/${gameId}/teams/${team}/${uid}`] = {
@@ -107,6 +105,50 @@ app.post('/newplayer', (request, response) => {
 })
 
 app.post('/getbubbles', (request, response) => {
+  console.log(config)
+
+  var uid = request.user.uid;
+  var gameId = request.body.gameId
+
+  if (gameId) {
+    admin.database().ref(`gameModel/game/${gameId}/status`).once('value', (data) => {
+      if (data.exists() && data.val() === 'active') {
+        admin.database().ref('questionModel/question').once('value', (questionSnapshot) => {
+          var questionsObj = questionSnapshot.val();
+          var questions = []
+          for (var i in questionsObj) {
+            var question = {
+              question: questionsObj[i].question,
+              answers: []
+            }
+            for (var j in questionsObj[i].answers) {
+              question.answers.push({
+                $key: j,
+                answer: questionsObj[i].answers[j].answer
+              })
+            }
+            question.answers = question.answers.sort(() => {
+              return chance.integer({min: -20, max: 20})
+            })
+            questions.push(question)
+          }
+          response.status(200).json({
+            questions: questions.sort(() => {
+              return chance.integer({min: -20, max: 20})
+            })
+          })
+        })
+      } else {
+        response.status(404).json({
+          error: 'gameId doesn\'t exist or not active'
+        })
+      }
+    })
+  } else {
+    response.status(404).json({
+      error: 'No gameId given'
+    })
+  }
 
 })
 

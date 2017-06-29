@@ -30,95 +30,129 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       </firebase-query>
 
       <iron-ajax
-          id="ajax"
+          id="newgame"
           url="https://us-central1-gdgphbubbles.cloudfunctions.net/auth/newplayer"
           method="POST"
           content-type="application/json"
           handle-as="json"
-          on-response="handleNewPlayer">
+          on-response="handleBubbles">
+      </iron-ajax>
+
+      <iron-ajax
+          id="bubbles"
+          url="https://us-central1-gdgphbubbles.cloudfunctions.net/auth/getbubbles"
+          method="POST"
+          content-type="application/json"
+          handle-as="json"
+          on-response="handleBubbles">
       </iron-ajax>
 
       <template is="dom-if" if="[[checkStatusActive(game.status)]]">
         [[game.status]]
         [[team]]
+        <br/>
+        <template is="dom-repeat" items="[[questions]]">
+          [[item.question]]<br/>
+        </template>
       </template>
     </template>
 
   </template>
 
   <script>
-    class BubbleGame extends Polymer.Element {
-      static get is() { return 'bubble-game-node'; }
-      static get properties() {
-        return {
-          gameKey: {
-            type: String
-          },
-          game: {
-            type: Object,
-            value: null
-          },
-          user: {
-            type: Object,
-            value: null
-          },
-          team: {
-            type: String,
-            value: null
+    (() => {
+      class BubbleGameNode extends Polymer.Element {
+        static get is() { return 'bubble-game-node'; }
+        static get properties() {
+          return {
+            gameKey: {
+              type: String
+            },
+            game: {
+              type: Object,
+              value: null
+            },
+            user: {
+              type: Object,
+              value: null
+            },
+            team: {
+              type: String,
+              value: null
+            }
           }
         }
-      }
-      static get observers() {
-        return [
-          'checkTeam(game.status, gameKey)'
-        ]
-      }
-
-      disconnectedCallback() {
-        super.disconnectedCallback()
-        if (this.teamRef) {
-          this.teamRef.off()
+        static get observers() {
+          return [
+            'checkTeam(game.status, gameKey)'
+          ]
         }
-      }
 
-      checkStatusActive(status) {
-        return status === 'active'
-      }
-
-      checkTeam(status, key) {
-        if (key && status && status === 'active') {
-          this.teamRef = firebase.database().ref(`gameModel/gamePlayers/${key}/players/${this.user.uid}/team`).on('value', this.setTeam.bind(this))
+        disconnectedCallback() {
+          super.disconnectedCallback()
+          if (this.teamRef) {
+            this.teamRef.off()
+          }
         }
-      }
 
-      setTeam(data) {
-        if (data.exists()) {
-          this.team = data.val()
-        } else {
-          console.log('no team')
-          var ajax = this.shadowRoot.querySelector('#ajax');
-          this.user.getIdToken().then((token) => {
-            ajax.headers = {
-              Authorization: 'Bearer ' + token
-            };
-            ajax.body = JSON.stringify({
-              gameId: this.gameKey
+        checkStatusActive(status) {
+          return status === 'active'
+        }
+
+        checkTeam(status, key) {
+          if (key && status && status === 'active') {
+            this.teamRef = firebase.database().ref(`gameModel/gamePlayers/${key}/players/${this.user.uid}/team`).on('value', this.setTeam.bind(this))
+          }
+        }
+
+        setTeam(data) {
+          if (data.exists()) {
+            this.team = data.val()
+            var ajax = this.shadowRoot.querySelector('#bubbles');
+            this.user.getIdToken().then((token) => {
+              ajax.headers = {
+                Authorization: 'Bearer ' + token
+              };
+              ajax.body = JSON.stringify({
+                gameId: this.gameKey
+              })
+              this._debouncerBubbles = Polymer.Debouncer.debounce(this._debouncerBubbles, Polymer.Async.timeOut.after(250), () => { this.generateBubbles() });
             })
-            this._debouncer = Polymer.Debouncer.debounce(this._debouncer, Polymer.Async.timeOut.after(250), () => { this.generateRequest() });
-          })
+          } else {
+            console.log('no team')
+            var ajax = this.shadowRoot.querySelector('#newgame');
+            this.user.getIdToken().then((token) => {
+              ajax.headers = {
+                Authorization: 'Bearer ' + token
+              };
+              ajax.body = JSON.stringify({
+                gameId: this.gameKey
+              })
+              this._debouncerNewGame = Polymer.Debouncer.debounce(this._debouncerNewGame, Polymer.Async.timeOut.after(250), () => { this.generateNewGame() });
+            })
+          }
+        }
+
+        generateBubbles() {
+          this.shadowRoot.querySelector('#bubbles').generateRequest()
+        }
+
+        generateNewGame() {
+          this.shadowRoot.querySelector('#newgame').generateRequest()
+        }
+
+        handleNewPlayer(e) {
+          var response = e.detail.response
+          console.log(response)
+        }
+
+        handleBubbles(e) {
+          var response = e.detail.response
+          this.questions = response.questions;
         }
       }
 
-      generateRequest() {
-        this.shadowRoot.querySelector('#ajax').generateRequest()
-      }
-
-      handleNewPlayer(e) {
-        var response = e.detail.response
-        console.log(response)
-      }
-    }
-
-    window.customElements.define(BubbleGame.is, BubbleGame);
+      window.customElements.define(BubbleGameNode.is, BubbleGameNode);
+    })()
   </script>
 </dom-module>
