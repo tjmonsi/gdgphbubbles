@@ -104,12 +104,10 @@ app.post('/newplayer', (request, response) => {
       error: 'No gameId given'
     })
   }
-  console.log(request.body.gameId)
-  // admin.database().ref(`gameModel/gamePlayers/${request}`)
-  console.log(request.user.uid)
-  // response.status(200).json({
-  //   hello: 'world'
-  // })
+})
+
+app.post('/getbubbles', (request, response) => {
+
 })
 
 app.get('/test', (request, response) => {
