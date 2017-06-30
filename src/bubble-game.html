@@ -59,7 +59,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </iron-ajax>
 
     <template is="dom-repeat" items="[[gameArray]]">
-      <bubble-game-node game-key="[[item.$key]]" user="[[user]]"></bubble-game-node>
+      <bubble-game-node game-key="[[item.$key]]" user="[[user]]" path="[[path]]"></bubble-game-node>
     </template>
     <template is="dom-if" if="[[!gameArray.length]]">
       <div class="message-box">
@@ -116,6 +116,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         zeroValue(e) {
           return e == true && e != {}
+        }
+
+        checkScoreboard(path) {
+          return path = '/score'
         }
       }
 

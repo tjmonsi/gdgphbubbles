@@ -1,6 +1,39 @@
 {
   "rules": {
     ".read": "auth != null",
-    ".write": "auth != null"
+  	"gameModel": {
+      "game": {
+        ".indexOn": "startTime",
+        "$gameId": {
+          ".write": "auth.uid == 'firebase-functions'"
+        }
+      },
+      "gamePlayers": {
+        "$gameId": {
+          ".write": "auth.uid == 'firebase-functions'",
+          "teams": {
+            "$color": {
+              ".indexOn": "score",
+            }
+          }
+        }
+      }
+    },
+    "questionModel": {
+      "question": {
+        "$question": {
+          ".read": "auth.uid == 'firebase-functions'",
+          ".write": false
+
+        }
+      }
+    },
+    "userModel": {
+      "user": {
+        "$userId": {
+          ".write": "auth.uid == $userId || auth.uid == 'firebase-functions'"
+        }
+      }
+    }
   }
 }

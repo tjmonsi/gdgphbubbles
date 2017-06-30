@@ -57,6 +57,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         height: 100px;
       }
 
+      .scoreboard {
+        height: calc(100vh - 64px);
+        overflow: auto;
+      }
+
     </style>
 
     <template is="dom-if" if="[[gameKey]]">
@@ -91,7 +96,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           on-response="handleBubbles">
       </iron-ajax>
 
-      <template is="dom-if" if="[[checkStatusActive(game.status)]]">
+      <template is="dom-if" if="[[checkStatusActive(game.status, path, user)]]">
         <div class="scores">
           Timer: [[game.timer]]<br/>
           Player Score: [[playerScore]]<br/>
@@ -109,97 +114,97 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       </template>
     </template>
 
-    <template is="dom-if" if="[[!checkStatusActive(game.status)]]">
+    <template is="dom-if" if="[[!checkStatusActive(game.status, path, user)]]">
       <firebase-query
           path="gameModel/gamePlayers/[[gameKey]]/teams/blue" data="{{blueTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
-
       <firebase-query
           path="gameModel/gamePlayers/[[gameKey]]/teams/red" data="{{redTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
-
       <firebase-query
           path="gameModel/gamePlayers/[[gameKey]]/teams/green" data="{{greenTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
-
       <firebase-query
           path="gameModel/gamePlayers/[[gameKey]]/teams/yellow" data="{{yellowTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
 
-      <div class="scores">
-        Red Team: [[game.scores.red]]<br>
-        Blue Team: [[game.scores.blue]]<br>
-        Green Team: [[game.scores.green]]<br>
-        Yellow Team: [[game.scores.yellow]]<br>
+      <div class="scoreboard">
+        <div class="scores">
+          Red Team: [[game.scores.red]]<br>
+          Blue Team: [[game.scores.blue]]<br>
+          Green Team: [[game.scores.green]]<br>
+          Yellow Team: [[game.scores.yellow]]<br>
+        </div>
+
+        <div class="scores">
+          Top 3 Red Team members:<br/>
+          <template is="dom-repeat" items="[[redTeam]]" sort="teamSort">
+            <div class="horizontal layout">
+              <div class="flex-5">
+                [[item.name]]
+              </div>
+
+              <div class="flex-2" style="text-align: center"> -
+              </div>
+
+              <div class="flex" style="text-align: right">
+                [[item.score]]
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="scores">
+          Top 3 Blue Team members:<br/>
+          <template is="dom-repeat" items="[[blueTeam]]" sort="teamSort">
+            <div class="horizontal layout">
+              <div class="flex-5">
+                [[item.name]]
+              </div>
+
+              <div class="flex-2" style="text-align: center"> -
+              </div>
+
+              <div class="flex" style="text-align: right">
+                [[item.score]]
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="scores">
+          Top 3 Green Team members:<br/>
+          <template is="dom-repeat" items="[[greenTeam]]" sort="teamSort">
+            <div class="horizontal layout">
+              <div class="flex-5">
+                [[item.name]]
+              </div>
+
+              <div class="flex-2" style="text-align: center"> -
+              </div>
+
+              <div class="flex" style="text-align: right">
+                [[item.score]]
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="scores">
+          Top 3 Yellow Team members:<br/>
+          <template is="dom-repeat" items="[[yellowTeam]]" sort="teamSort">
+            <div class="horizontal layout">
+              <div class="flex-5">
+                [[item.name]]
+              </div>
+
+              <div class="flex-2" style="text-align: center"> -
+              </div>
+
+              <div class="flex" style="text-align: right">
+                [[item.score]]
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
 
-      <div class="scores">
-        Top 3 Red Team members:<br/>
-        <template is="dom-repeat" items="[[redTeam]]">
-          <div class="horizontal layout">
-            <div class="flex-5">
-              [[item.name]]
-            </div>
-
-            <div class="flex-2" style="text-align: center"> -
-            </div>
-
-            <div class="flex" style="text-align: right">
-              [[item.score]]
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <div class="scores">
-        Top 3 Blue Team members:<br/>
-        <template is="dom-repeat" items="[[blueTeam]]">
-          <div class="horizontal layout">
-            <div class="flex-5">
-              [[item.name]]
-            </div>
-
-            <div class="flex-2" style="text-align: center"> -
-            </div>
-
-            <div class="flex" style="text-align: right">
-              [[item.score]]
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <div class="scores">
-        Top 3 Green Team members:<br/>
-        <template is="dom-repeat" items="[[greenTeam]]">
-          <div class="horizontal layout">
-            <div class="flex-5">
-              [[item.name]]
-            </div>
-
-            <div class="flex-2" style="text-align: center"> -
-            </div>
-
-            <div class="flex" style="text-align: right">
-              [[item.score]]
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <div class="scores">
-        Top 3 Yellow Team members:<br/>
-        <template is="dom-repeat" items="[[yellowTeam]]">
-          <div class="horizontal layout">
-            <div class="flex-5">
-              [[item.name]]
-            </div>
-
-            <div class="flex-2" style="text-align: center"> -
-            </div>
-
-            <div class="flex" style="text-align: right">
-              [[item.score]]
-            </div>
-          </div>
-        </template>
-      </div>
     </template>
 
   </template>
@@ -253,8 +258,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.questions = []
         }
 
-        checkStatusActive(status) {
-          return status === 'active'
+        checkStatusActive(status, path) {
+          return status === 'active' && !(path === '/score')
         }
 
         checkTeam(status, key) {
@@ -277,7 +282,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               this._debouncerBubbles = Polymer.Debouncer.debounce(this._debouncerBubbles, Polymer.Async.timeOut.after(250), () => { this.generateBubbles() });
             })
           } else {
-            console.log('no team')
             document.querySelector('bubble-app').showMessage('Creating bubbles to pop...')
             var ajax = this.shadowRoot.querySelector('#newgame');
             this.user.getIdToken().then((token) => {
@@ -302,7 +306,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         handleNewPlayer(e) {
           var response = e.detail.response
-          console.log(response)
         }
 
         handlePopBubble(e) {
@@ -335,7 +338,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           if (game) {
             return game.scores[team]
           }
+        }
 
+        teamSort(p, q) {
+          return q.score - p.score
         }
 
         handleBubbles(e) {

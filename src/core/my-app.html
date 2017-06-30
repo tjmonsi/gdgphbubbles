@@ -18,6 +18,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
 <link rel="import" href="../bubble-game.html">
 <!--<link rel="lazy-import" href="bubble-view1.html">
 <link rel="lazy-import" href="bubble-view2.html">
@@ -70,6 +71,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         white-space: nowrap;
         user-select: none;
       }
+
+      sub {
+        font-size: 14px;
+      }
     </style>
 
     <firebase-app
@@ -86,20 +91,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         online="{{online}}"
         status-known="{{authStatus}}"></firebase-auth>
 
-    <app-header shadow condenses reveals >
+    <app-location route="{{route}}" url-space-regex="^[[rootPath]]"></app-location>
+
+    <app-header condenses reveals>
       <app-toolbar>
         <div main-title>
           <span class="longer-title">
-            GDG Philippines Bubbles Program
+            bubbles<sub>gdgph</sub>
           </span>
           <span class="shorter-title">
-            GDGPh Bubbles
+            bubbles<sub>gdgph</sub>
           </span>
         </div>
         <template is="dom-if" if="[[online]]">
           <template is="dom-if" if="[[authStatus]]">
             <template is="dom-if" if="[[!user]]">
-              <a class="auth-button" href="#" on-tap="login" on-click="login">
+              <a class="auth-button" href="./#" on-tap="login" on-click="login">
                 Login
                 <paper-ripple></paper-ripple>
               </a>
@@ -108,7 +115,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               <span class="user-name">
                 Hi [[user.displayName]]!
               </span>
-              <a class="auth-button" href="#" on-tap="logout" on-click="logout">
+              <a class="auth-button" href="./#" on-tap="logout" on-click="logout">
                 Logout
                 <paper-ripple></paper-ripple>
               </a>
@@ -125,11 +132,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <template is="dom-if" if="[[online]]">
       <template is="dom-if" if="[[authStatus]]">
         <template is="dom-if" if="[[user]]">
-          <bubble-game user="[[user]]"></bubble-game>
+          <bubble-game user="[[user]]" path="[[route.path]]"></bubble-game>
         </template>
         <template is="dom-if" if="[[!user]]">
           <div class="message-box">
-            Please Login to enjoy the game
+            bubbles<sub>gdgph</sub>
+            <br/>
+            [[routeData.page]]
           </div>
         </template>
       </template>
@@ -141,7 +150,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </template>
     <template is="dom-if" if="[[!online]]">
       <div class="message-box">
-        To play this game. You should be online
+        To play this game. You should be online.
       </div>
     </template>
 
@@ -193,10 +202,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.$.auth.signInWithPopup().then((result) => {
             if (result.user) {
               this.user = result.user
-              var toast = this.shadowRoot.querySelector('paper-toast')
-              toast.close()
-              toast.text = 'Hello ' + (this.user.displayName || this.user.email)
-              toast.open()
+              this.showMessage('Hello ' + (this.user.displayName || this.user.name ||  this.user.email))
             } else {
               throw new Error('No user found')
             }
@@ -207,17 +213,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         logout() {
           this.$.auth.signOut().then(() => {
-            var name = (this.user.displayName || this.user.email)
+            var name = (this.user.displayName || this.user.name ||  this.user.email)
             this.user = null
-            var toast = this.shadowRoot.querySelector('paper-toast')
-            toast.close()
-            toast.text = 'Goodbye ' + name
-            toast.open()
+            this.showMessage('Goodbye ' + name)
           }).catch((err) => {
             console.error(err)
           })
         }
 
+        // For toast.
         showMessage(message, handler, action) {
           var toast = this.shadowRoot.querySelector('paper-toast')
           this.action = action;
