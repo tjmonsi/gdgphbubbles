@@ -13,7 +13,7 @@
           ".write": "auth.uid == 'firebase-functions'",
           "teams": {
             "$color": {
-              ".indexOn": "score",
+              ".indexOn": "score"
             }
           }
         }
