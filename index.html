@@ -53,17 +53,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <meta name="msapplication-TileColor" content="#3f51b5">
     <meta name="msapplication-tap-highlight" content="no">
 
-    <script>
-      // Register the base URL
-      const baseUrl = document.querySelector('base').href;
 
-      // Load and register pre-caching Service Worker
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register(baseUrl + 'service-worker.js');
-        });
-      }
-    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/4.1.3/firebase.js"></script>
 
     <!-- Load webcomponents-loader.js to check and load any polyfills your browser needs -->
     <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
@@ -88,5 +80,88 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       Please enable JavaScript to view this website.
     </noscript>
     <!-- Built with love using Polymer Starter Kit -->
+
+
+    <script>
+      // Register the base URL
+      const baseUrl = document.querySelector('base').href;
+
+      // Ensure we only attempt to register the SW once.
+      var isAlreadyRegistered = false;
+
+      var url = '/service-worker.js';
+
+      var register = function () {
+        if (!isAlreadyRegistered) {
+          isAlreadyRegistered = true;
+
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(url, {
+              scope: baseUrl
+            }).then(function (registration) {
+              registration.onupdatefound = function () {
+                // The updatefound event implies that registration.installing is set; see
+                // https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#service-worker-container-updatefound-event
+                var installingWorker = registration.installing;
+
+                installingWorker.onstatechange = function () {
+                  switch (installingWorker.state) {
+                    case 'installed':
+                      if (!navigator.serviceWorker.controller) {
+                        document.querySelector('bubble-app').showMessage('Caching complete! Future visits will work offline.')
+                      }
+                      break;
+
+                    case 'redundant':
+                      console.error(Error('The installing service worker became redundant.'));
+                      // Raven.captureMessage('The installing service worker became redundant.');
+                  }
+                };
+              };
+            }).catch(function (e) {
+              // NICEV1.Analytics.trackError('navigator.serviceWorker.register() error', e);
+              // Raven.captureMessage('Service worker registration failed:', e);
+              console.error('Service worker registration failed:', e);
+            });
+          }
+        }
+      };
+
+      // Check to see if the service worker controlling the page at initial load
+      // has become redundant, since this implies there's a new service worker with fresh content.
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.onstatechange = function (event) {
+          if (event.target.state === 'redundant') {
+            // Define a handler that will be used for the next io-toast tap, at which point it
+            // be automatically removed.
+            var tapHandler = function () {
+              window.location.reload();
+            };
+
+            document.querySelector('bubble-app').showMessage('A new version of this app is available.', tapHandler, 'Refesh')
+
+
+
+            // if (NICEV1.Elements && NICEV1.Elements.Template &&
+            //   NICEV1.Elements.Template.$.toast.showMessage) {
+            //   NICEV1.Elements.Template.$.toast.showMessage(
+            //     'A new version of this app is available.', tapHandler, 'Refresh',
+            //     null, 0); // duration 0 indications shows the toast indefinitely.
+            // } else {
+            //   tapHandler(); // Force reload if user never was shown the toast.
+            // }
+          }
+        };
+      }
+
+      register();
+
+      // // Load and register pre-caching Service Worker
+      // if ('serviceWorker' in navigator) {
+      //   window.addEventListener('load', function() {
+      //     navigator.serviceWorker.register(baseUrl + 'service-worker.js');
+      //   });
+      // }
+    </script>
   </body>
 </html>

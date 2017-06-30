@@ -54,8 +54,44 @@ app.use(cors);
 app.use(cookieParser);
 app.use(validateFirebaseIdToken);
 
+app.post('/newgame', (request, response) => {
+  var uid = request.user.uid;
+
+  admin.database().ref(`userModel/admin/${uid}/value`).once('value', (data) => {
+    if (data.exists() && data.val()) {
+      admin.database().ref('gameModel/game/').push({
+        scores: {
+          blue: 0,
+          green: 0,
+          red: 0,
+          yellow: 0
+        },
+        startTime: admin.database.ServerValue.TIMESTAMP,
+        status: 'active',
+        teams: {
+          blue: 0,
+          green: 0,
+          red: 0,
+          yellow: 0
+        }
+      }).then(() => {
+        response.status(200).json({
+          message: 'Game created'
+        })
+      }).catch((error) => {
+        response.status(500).send(error)
+      })
+    } else {
+      response.status(403).send('Unauthorized');
+    }
+  })
+
+
+})
+
 app.post('/newplayer', (request, response) => {
   var uid = request.user.uid;
+  var user = request.user;
   var gameId = request.body.gameId
 
   if (gameId) {
@@ -78,6 +114,7 @@ app.post('/newplayer', (request, response) => {
         var updates = {}
         updates[`gameModel/gamePlayers/${gameId}/teams/${team}/${uid}`] = {
           score: 0,
+          name: user.displayName || user.name || user.email,
           value: true
         }
         updates[`gameModel/gamePlayers/${gameId}/players/${uid}`] = { team }
@@ -105,8 +142,6 @@ app.post('/newplayer', (request, response) => {
 })
 
 app.post('/getbubbles', (request, response) => {
-  console.log(config)
-
   var uid = request.user.uid;
   var gameId = request.body.gameId
 
@@ -119,6 +154,7 @@ app.post('/getbubbles', (request, response) => {
           for (var i in questionsObj) {
             var question = {
               question: questionsObj[i].question,
+              $key: i,
               answers: []
             }
             for (var j in questionsObj[i].answers) {
@@ -139,7 +175,7 @@ app.post('/getbubbles', (request, response) => {
 
           var newQuestions = []
 
-          for (var m = 0; m < 40; m++) {
+          for (var m = 0; m < 20; m++) {
             newQuestions.push(questionsSorted[m])
           }
 
@@ -158,7 +194,58 @@ app.post('/getbubbles', (request, response) => {
       error: 'No gameId given'
     })
   }
+})
 
+app.post('/popbubble', (request, response) => {
+  var uid = request.user.uid;
+  var gameId = request.body.gameId
+  var question = request.body.question
+  var answer = request.body.answer
+
+  if (gameId && question && answer) {
+    admin.database().ref(`gameModel/game/${gameId}/status`).once('value', (data) => {
+      if (data.exists() && data.val() === 'active') {
+        admin.database().ref(`questionModel/question/${question}/correct`).once('value', (questionSnapshot) => {
+          if (questionSnapshot.exists()) {
+            var pop = questionSnapshot.val() == answer
+            if (pop) {
+              admin.database().ref(`gameModel/gamePlayers/${gameId}/players/${uid}/team`).once('value', (teamSnapshot) => {
+                var team = teamSnapshot.val();
+                admin.database().ref(`gameModel/gamePlayers/${gameId}/teams/${team}/${uid}/score`).transaction((score) => {
+                  return score + 1;
+                })
+
+                admin.database().ref(`userModel/user/${uid}/totalScore`).transaction((score) => {
+                  return score + 1;
+                })
+
+                admin.database().ref(`gameModel/game/${gameId}/scores/${team}`).transaction((score) => {
+                  return score + 1;
+                })
+              })
+            }
+
+
+            response.status(200).json({
+              pop
+            })
+          } else {
+            response.status(404).json({
+              error: 'question doesn\'t exist'
+            })
+          }
+        })
+      } else {
+        response.status(404).json({
+          error: 'gameId doesn\'t exist or not active'
+        })
+      }
+    })
+  } else {
+    response.status(404).json({
+      error: 'No gameId or question or answer was given'
+    })
+  }
 })
 
 app.get('/test', (request, response) => {
@@ -176,3 +263,13 @@ app.get('/test', (request, response) => {
 // });
 
 exports.auth = functions.https.onRequest(app)
+
+exports.saveUser = functions.auth.user().onCreate(event => {
+  const user = event.data;
+  admin.database().ref(`userModel/user/${user.uid}`).set({
+    displayName: user.displayName || user.name || user.email,
+    email: user.email,
+    avatar: user.photoURL,
+    totalScore: 0
+  })
+})

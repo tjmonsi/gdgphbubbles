@@ -9,32 +9,165 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/mixins/gesture-event-listeners.html">
 <link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/neon-animation/web-animations.html">
+<link rel="import" href="../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="chance.html">
 
 <dom-module id="bubble-node">
   <template>
     <style>
+      .bubble {
+        height: 100px;
+        width: 100px;
+      }
 
+      paper-dialog {
+        padding: 10px;
+      }
+
+      paper-button {
+        width: 100%;
+      }
+
+      .question {
+        font-weight: bold;
+      }
+
+      .answers {
+        text-align: center
+      }
     </style>
 
+    <iron-ajax
+        id="popbubble"
+        url="https://us-central1-gdgphbubbles.cloudfunctions.net/auth/popbubble"
+        method="POST"
+        content-type="application/json"
+        handle-as="json"
+        on-response="handlePop">
+    </iron-ajax>
 
+    <img class="bubble" src$="../images/bubbles/[[color]]_bubble.png" on-tap="bubbleTap">
+
+    <paper-dialog entry-animation="scale-up-animation"
+                  exit-animation="fade-out-animation">
+      <div>
+        <span class="question">[[questionObject.question]]</span><br/>
+        Timer: [[timer]]
+        <div class="answers">
+          <template is="dom-repeat" items="[[questionObject.answers]]">
+            <paper-button key$="[[item.$key]]" on-tap="popBubble">
+              [[item.answer]]
+            </paper-button><br/>
+          </template>
+        </div>
+      </div>
+
+    </paper-dialog>
   </template>
 
   <script>
     (() => {
-      class BubbleNode extends Polymer.Element {
+      class BubbleNode extends Polymer.GestureEventListeners(Polymer.Element) {
         static get is() { return 'bubble-node'; }
         static get properties() {
           return {
-            gameArray: {
-              type: Array,
-              value: () => ([])
+            questionObject: {
+              type: String
+            },
+            color: {
+              type: String
             },
             user: {
-              type: Object,
-              value: null
+              type: Object
+            },
+            gameKey: {
+              type: String
+            },
+            timer: {
+              type: Number,
+              value: 10
             }
           }
+        }
+
+        static get observers() {
+          return [
+            'checkKey(questionObject.$key)'
+          ]
+        }
+
+        connectedCallback() {
+          super.connectedCallback()
+          var colors = ['red', 'blue', 'green', 'yellow']
+          var chance = new Chance();
+          this.color = colors[chance.integer({min: 0, max: 3})]
+
+        }
+
+        disconnectedCallback() {
+          super.disconnectedCallback();
+          if (this.__timer) {
+            clearInterval(this.__timer)
+          }
+        }
+
+        checkKey() {
+          this.shadowRoot.querySelector('.bubble').style.display = 'block'
+        }
+
+        popBubble(e) {
+          if (this.questionObject.answered) {
+            console.log('already answered')
+            return
+          }
+          var answer = e.target.getAttribute('key');
+          var ajax = this.shadowRoot.querySelector('#popbubble');
+          this.user.getIdToken().then((token) => {
+            ajax.headers = {
+              Authorization: 'Bearer ' + token
+            };
+            ajax.body = JSON.stringify({
+              gameId: this.gameKey,
+              question: this.questionObject.$key,
+              answer: answer
+            })
+            this._debouncerBubbles = Polymer.Debouncer.debounce(this._debouncerBubbles, Polymer.Async.timeOut.after(250), () => { this.generateBubble() });
+          })
+          this.questionObject.answered = true;
+          clearInterval(this.__timer)
+          this.shadowRoot.querySelector('paper-dialog').close();
+          this.shadowRoot.querySelector('.bubble').style.display = 'none'
+        }
+
+        generateBubble() {
+          this.shadowRoot.querySelector('#popbubble').generateRequest();
+        }
+
+        bubbleTap() {
+          this.shadowRoot.querySelector('paper-dialog').open()
+          this.__timer = setInterval(() => {
+            if (this.timer) {
+              this.timer--
+            } else {
+               this.shadowRoot.querySelector('paper-dialog').close();
+               clearInterval(this.__timer)
+              //  setTimeout(() => {
+              //   this.dispatchEvent(new CustomEvent('pop-bubble'))
+              //  }, 300)
+
+            }
+          }, 1000)
+        }
+
+        handlePop(e) {
+          this.dispatchEvent(new CustomEvent('pop-bubble'))
         }
       }
 

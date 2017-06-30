@@ -9,6 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/lib/mixins/gesture-event-listeners.html">
 <link rel="import" href="../../bower_components/polymer/lib/elements/dom-if.html">
 <link rel="import" href="../../bower_components/polymerfire/firebase-app.html">
 <link rel="import" href="../../bower_components/polymerfire/firebase-auth.html">
@@ -16,6 +17,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner-lite.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../bubble-game.html">
 <!--<link rel="lazy-import" href="bubble-view1.html">
 <link rel="lazy-import" href="bubble-view2.html">
@@ -56,6 +58,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         .longer-title, .user-name {
           display: none;
         }
+      }
+
+      .toast-action {
+        @apply (--layout-self-center);
+        padding-left: 24px;
+        color: #eeff41;
+        text-transform: uppercase;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        user-select: none;
       }
     </style>
 
@@ -131,6 +144,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         To play this game. You should be online
       </div>
     </template>
+
+    <paper-toast on-tap="_handleTap" layout horizontal justified>
+      <tempalte is="dom-if" if="[[action]]" on-tap="_handleAction" >
+        <span class="toast-action"
+            on-tap="_handleAction">[[action]]</span>
+      </tempalte>
+    </paper-toast>
   </template>
 
   <script>
@@ -144,7 +164,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         messagingSenderId: "522135348069"
       };
 
-      class BubbleApp extends window.Polymer.Element {
+      class BubbleApp extends Polymer.GestureEventListeners(Polymer.Element) {
 
         static get is() { return 'bubble-app'; }
 
@@ -173,6 +193,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.$.auth.signInWithPopup().then((result) => {
             if (result.user) {
               this.user = result.user
+              var toast = this.shadowRoot.querySelector('paper-toast')
+              toast.close()
+              toast.text = 'Hello ' + (this.user.displayName || this.user.email)
+              toast.open()
             } else {
               throw new Error('No user found')
             }
@@ -183,10 +207,44 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         logout() {
           this.$.auth.signOut().then(() => {
+            var name = (this.user.displayName || this.user.email)
             this.user = null
+            var toast = this.shadowRoot.querySelector('paper-toast')
+            toast.close()
+            toast.text = 'Goodbye ' + name
+            toast.open()
           }).catch((err) => {
             console.error(err)
           })
+        }
+
+        showMessage(message, handler, action) {
+          var toast = this.shadowRoot.querySelector('paper-toast')
+          this.action = action;
+          this._actionHandler = handler;
+          toast.duration = action ? 0 : 5000
+          toast.close();
+          toast.text = message;
+          toast.show();
+        }
+
+        _handleTap() {
+          if (typeof this._tapHandler == 'function' && !this._handledAction) {
+            this._tapHandler();
+            this.shadowRoot.querySelector('paper-toast').close()
+          }
+          this._handledAction = false;
+        }
+
+        _handleAction(e, detail) {
+          if (typeof this._actionHandler == 'function') {
+            e.stopPropagation();
+            this._actionHandler();
+            this._handledAction = true;
+            // Need because handleTap will also be called from a tap.
+            // This handle is a click.
+            this.shadowRoot.querySelector('paper-toast').close()
+          }
         }
 
       }

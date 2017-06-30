@@ -9,18 +9,54 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/mixins/gesture-event-listeners.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/polymer/lib/utils/render-status.html">
 <link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
-<link rel="import" href="/bower_components/polymer/lib/utils/debounce.html">
+<link rel="import" href="../bower_components/polymer/lib/utils/debounce.html">
 <link rel="import" href="../bower_components/polymerfire/firebase-document.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner-lite.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="bubble-node.html">
+<link rel="import" href="chance.html">
 
 <dom-module id="bubble-game-node">
   <template>
-    <style>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors">
       :host {
         display: block;
+        position: relative;
+        height: calc(100vh - 64px);
+        overflow: hidden;
+
+      }
+
+      bubble-node {
+        position: absolute;
+        transition-property: top, left, opacity;
+        transition-duration: 5s, 5s, 1s;
+        transition-timing-function: linear;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .scores {
         padding: 10px;
       }
+
+      .message-box {
+        padding: 20px;
+        padding-top: 100px;
+        font-size: 2em;
+        text-align: center;
+      }
+
+      .auth-status-spinner-main {
+        width: 100px;
+        height: 100px;
+      }
+
     </style>
 
     <template is="dom-if" if="[[gameKey]]">
@@ -28,6 +64,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           path="gameModel/game/[[gameKey]]"
           data="{{game}}">
       </firebase-query>
+
+      <template is="dom-if" if="[[team]]">
+        <firebase-document
+            path="gameModel/gamePlayers/[[gameKey]]/teams/[[team]]/[[user.uid]]/score"
+            data="{{playerScore}}"
+            zero-value="0">
+        </firebase-document>
+      </template>
 
       <iron-ajax
           id="newgame"
@@ -48,20 +92,120 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       </iron-ajax>
 
       <template is="dom-if" if="[[checkStatusActive(game.status)]]">
-        [[game.status]]
-        [[team]]
-        <br/>
-        <template is="dom-repeat" items="[[questions]]">
-          [[item.question]]<br/>
+        <div class="scores">
+          Player Score: [[playerScore]]<br/>
+          Team Score ([[team]]): [[teamScore(game, team, game.scores.red, game.scores.blue, game.scores.green, game.scores.yellow)]]
+        </div>
+
+        <template is="dom-if" if="[[!questions.length]]">
+          <div class="message-box">
+            <paper-spinner-lite class="auth-status-spinner-main" active>Loading bubbles...</paper-spinner-lite>
+          </div>
+        </template>
+        <template is="dom-repeat" items="{{questions}}">
+          <bubble-node index="[[index]]" game-key="[[gameKey]]" question-object="[[item]]" user="[[user]]" on-pop-bubble="handlePopBubble">
         </template>
       </template>
+    </template>
+
+    <template is="dom-if" if="[[!checkStatusActive(game.status)]]">
+      <firebase-query
+          path="gameModel/gamePlayers/[[gameKey]]/teams/blue" data="{{blueTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
+
+      <firebase-query
+          path="gameModel/gamePlayers/[[gameKey]]/teams/red" data="{{redTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
+
+      <firebase-query
+          path="gameModel/gamePlayers/[[gameKey]]/teams/green" data="{{greenTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
+
+      <firebase-query
+          path="gameModel/gamePlayers/[[gameKey]]/teams/yellow" data="{{yellowTeam}}" order-by-child="score" limit-to-last="3"></firebase-query>
+
+      <div class="scores">
+        Red Team: [[game.scores.red]]<br>
+        Blue Team: [[game.scores.blue]]<br>
+        Green Team: [[game.scores.green]]<br>
+        Yellow Team: [[game.scores.yellow]]<br>
+      </div>
+
+      <div class="scores">
+        Top 3 Red Team members:<br/>
+        <template is="dom-repeat" items="[[redTeam]]">
+          <div class="horizontal layout">
+            <div class="flex-5">
+              [[item.name]]
+            </div>
+
+            <div class="flex-2" style="text-align: center"> -
+            </div>
+
+            <div class="flex" style="text-align: right">
+              [[item.score]]
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="scores">
+        Top 3 Blue Team members:<br/>
+        <template is="dom-repeat" items="[[blueTeam]]">
+          <div class="horizontal layout">
+            <div class="flex-5">
+              [[item.name]]
+            </div>
+
+            <div class="flex-2" style="text-align: center"> -
+            </div>
+
+            <div class="flex" style="text-align: right">
+              [[item.score]]
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="scores">
+        Top 3 Green Team members:<br/>
+        <template is="dom-repeat" items="[[greenTeam]]">
+          <div class="horizontal layout">
+            <div class="flex-5">
+              [[item.name]]
+            </div>
+
+            <div class="flex-2" style="text-align: center"> -
+            </div>
+
+            <div class="flex" style="text-align: right">
+              [[item.score]]
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="scores">
+        Top 3 Yellow Team members:<br/>
+        <template is="dom-repeat" items="[[yellowTeam]]">
+          <div class="horizontal layout">
+            <div class="flex-5">
+              [[item.name]]
+            </div>
+
+            <div class="flex-2" style="text-align: center"> -
+            </div>
+
+            <div class="flex" style="text-align: right">
+              [[item.score]]
+            </div>
+          </div>
+        </template>
+      </div>
     </template>
 
   </template>
 
   <script>
     (() => {
-      class BubbleGameNode extends Polymer.Element {
+      class BubbleGameNode extends Polymer.GestureEventListeners(Polymer.Element) {
         static get is() { return 'bubble-game-node'; }
         static get properties() {
           return {
@@ -74,17 +218,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             },
             user: {
               type: Object,
-              value: null
+              value: null,
+              observer: 'checkUser'
             },
             team: {
               type: String,
               value: null
+            },
+            questions: {
+              type: Array,
+              value: []
             }
           }
         }
         static get observers() {
           return [
-            'checkTeam(game.status, gameKey)'
+            'checkTeam(game.status, gameKey, user)'
           ]
         }
 
@@ -93,6 +242,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           if (this.teamRef) {
             this.teamRef.off()
           }
+
+          if (this.__bubbleInterval) {
+            clearInterval(this.__bubbleInterval)
+          }
+        }
+
+        checkUser(user) {
+          this.questions = []
         }
 
         checkStatusActive(status) {
@@ -120,6 +277,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             })
           } else {
             console.log('no team')
+            document.querySelector('bubble-app').showMessage('Creating bubbles to pop...')
             var ajax = this.shadowRoot.querySelector('#newgame');
             this.user.getIdToken().then((token) => {
               ajax.headers = {
@@ -146,9 +304,71 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           console.log(response)
         }
 
+        handlePopBubble(e) {
+          var element = e.target;
+          element.style.display = 'none'
+          var flag = true
+          for (var i in this.questions) {
+            if (!this.questions[i].answered) {
+              flag = false;
+              break;
+            }
+          }
+          if (flag) {
+            console.log('all answered')
+            this.questions = []
+            var ajax = this.shadowRoot.querySelector('#bubbles');
+            this.user.getIdToken().then((token) => {
+              ajax.headers = {
+                Authorization: 'Bearer ' + token
+              };
+              ajax.body = JSON.stringify({
+                gameId: this.gameKey
+              })
+              this._debouncerBubbles = Polymer.Debouncer.debounce(this._debouncerBubbles, Polymer.Async.timeOut.after(250), () => { this.generateBubbles() });
+            })
+          }
+        }
+
+        teamScore(game, team) {
+          if (game) {
+            return game.scores[team]
+          }
+
+        }
+
         handleBubbles(e) {
           var response = e.detail.response
           this.questions = response.questions;
+          // for (var i in )
+
+          Polymer.RenderStatus.afterNextRender(this, () => {
+
+            this.shadowRoot.querySelectorAll('bubble-node').forEach((bubble) => {
+              var chance = new Chance();
+              bubble.style.top = 'calc(' + chance.integer({min: -10, max: 90}) + 'vh - 64px)'
+              bubble.style.left = chance.integer({min: -20, max: 90}) + 'vw'
+              bubble.style['transition-duration'] = chance.integer({min: 4, max: 10}) + 's,' + chance.integer({min: 4, max: 10}) + 's,' + '1s'
+              bubble.style.opacity = 1
+            })
+            setTimeout(() => {
+              this.shadowRoot.querySelectorAll('bubble-node').forEach((bubble) => {
+                var chance = new Chance();
+                bubble.style.top = 'calc(' + chance.integer({min: -10, max: 90}) + 'vh - 64px)'
+                bubble.style.left = chance.integer({min: -20, max: 90}) + 'vw'
+                bubble.style['transition-duration'] = chance.integer({min: 4, max: 10}) + 's,' + chance.integer({min: 4, max: 10}) + 's,' + '1s'
+              })
+            }, 100)
+
+            this.__bubbleInterval = setInterval(() => {
+              this.shadowRoot.querySelectorAll('bubble-node').forEach((bubble) => {
+                var chance = new Chance();
+                bubble.style.top = 'calc(' + chance.integer({min: -10, max: 90}) + 'vh - 64px)'
+                bubble.style.left =  chance.integer({min: -20, max: 100}) + 'vw'
+                bubble.style['transition-duration'] = chance.integer({min: 4, max: 10}) + 's,' + chance.integer({min: 4, max: 10}) + 's,' + '1s'
+              })
+            },5000)
+          })
         }
       }
 

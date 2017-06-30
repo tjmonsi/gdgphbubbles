@@ -9,8 +9,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/mixins/gesture-event-listeners.html">
 <link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
 <link rel="import" href="../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="bubble-icons.html">
 <link rel="import" href="bubble-game-node.html">
 
 <dom-module id="bubble-game">
@@ -18,37 +22,100 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <style>
       :host {
         display: block;
-        padding: 10px;
+      }
+
+      .message-box {
+        padding: 20px;
+        padding-top: 100px;
+        font-size: 2em;
+        text-align: center;
+      }
+
+      .auth-status-spinner-main {
+        width: 100px;
+        height: 100px;
+      }
+
+      paper-fab {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
       }
     </style>
 
     <firebase-query
-      path="gameModel/game"
-      data="{{gameArray}}"
-      order-by-child="startTime"
-      limit-to-last="1">
+        path="gameModel/game"
+        data="{{gameArray}}"
+        order-by-child="startTime"
+        limit-to-last="1">
     </firebase-query>
+
+    <iron-ajax
+        id="newgame"
+        url="https://us-central1-gdgphbubbles.cloudfunctions.net/auth/newgame"
+        method="POST"
+        content-type="application/json"
+        handle-as="json">
+    </iron-ajax>
 
     <template is="dom-repeat" items="[[gameArray]]">
       <bubble-game-node game-key="[[item.$key]]" user="[[user]]"></bubble-game-node>
     </template>
+    <template is="dom-if" if="[[!gameArray.length]]">
+      <div class="message-box">
+        <paper-spinner-lite class="auth-status-spinner-main" active>Loading...</paper-spinner-lite>
+      </div>
+    </template>
+
+    <template is="dom-if" if="[[user]]">
+      <firebase-document
+          path="/userModel/admin/[[user.uid]]/value" data="{{admin}}">
+        <template is="dom-if" if="[[zeroValue(admin)]]">
+          <paper-fab icon="myicons:add" on-tap="newGame"></paper-fab>
+        </template>
+    </template>
+
+
   </template>
 
   <script>
     (() => {
-      class BubbleGame extends Polymer.Element {
+      class BubbleGame extends Polymer.GestureEventListeners(Polymer.Element) {
         static get is() { return 'bubble-game'; }
         static get properties() {
           return {
             gameArray: {
               type: Array,
-              value: () => ([])
+              value: []
             },
             user: {
               type: Object,
               value: null
+            },
+            admin: {
+              type: Boolean,
+              value: false
             }
           }
+        }
+
+        newGame() {
+          var ajax = this.shadowRoot.querySelector('#newgame');
+          this.user.getIdToken().then((token) => {
+            ajax.headers = {
+              Authorization: 'Bearer ' + token
+            };
+            ajax.body = {}
+            this._debouncerNewGame = Polymer.Debouncer.debounce(this._debouncerNewGame, Polymer.Async.timeOut.after(250), () => { this.generateNewGame() });
+          })
+        }
+
+        generateNewGame() {
+          this.shadowRoot.querySelector('#newgame').generateRequest()
+        }
+
+        zeroValue(e) {
+          return e == true && e != {}
         }
       }
 

@@ -1,12 +1,6 @@
 {
   "entrypoint": "index.html",
-  "shell": "src/my-app.html",
-  "fragments": [
-    "src/my-view1.html",
-    "src/my-view2.html",
-    "src/my-view3.html",
-    "src/my-view404.html"
-  ],
+  "shell": "src/core/my-app.html",
   "sources": [
     "src/**/*",
     "images/**/*",
@@ -14,9 +8,12 @@
   ],
   "extraDependencies": [
     "manifest.json",
-    "bower_components/webcomponentsjs/*.js"
+    "bower_components/webcomponentsjs/*.js",
+    "bower_components/chance/*.js",
+    "bower_components/web-animations-js/*.js"
   ],
   "lint": {
     "rules": ["polymer-2"]
-  }
+  },
+  "builds": [ { "addServiceWorker": false, "js": { "minify": true }, "css": { "minify": true }, "html": { "minify": true } } ]
 }

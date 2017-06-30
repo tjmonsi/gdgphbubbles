@@ -15,7 +15,14 @@
     "app-layout": "PolymerElements/app-layout#^2.0.0",
     "paper-ripple": "PolymerElements/paper-ripple#^2.0.0",
     "paper-spinner": "PolymerElements/paper-spinner#^2.0.0",
-    "iron-ajax": "PolymerElements/iron-ajax#^2.0.2"
+    "iron-ajax": "PolymerElements/iron-ajax#^2.0.2",
+    "chance": "^1.0.10",
+    "paper-dialog": "PolymerElements/paper-dialog#^2.0.0",
+    "web-animations-js": "^2.2.5",
+    "paper-button": "^2.0.0",
+    "paper-toast": "PolymerElements/paper-toast#^2.0.0",
+    "paper-fab": "PolymerElements/paper-fab#^2.0.0",
+    "iron-iconset-svg": "^2.0.0"
   },
   "resolutions": {
     "polymer": "^2.0.0"
