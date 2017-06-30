@@ -93,6 +93,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       <template is="dom-if" if="[[checkStatusActive(game.status)]]">
         <div class="scores">
+          Timer: [[game.timer]]<br/>
           Player Score: [[playerScore]]<br/>
           Team Score ([[team]]): [[teamScore(game, team, game.scores.red, game.scores.blue, game.scores.green, game.scores.yellow)]]
         </div>
